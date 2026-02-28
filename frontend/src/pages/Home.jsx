@@ -14,10 +14,14 @@ export default function Home() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/public/events`);
+        const cleanBaseUrl = API_BASE_URL.replace(/\/$/, ""); 
+        const res = await axios.get(`${cleanBaseUrl}/api/public/events`);
         setEvents(res.data);
-      } catch (err) { console.error("Error fetching events", err); } 
-      finally { setLoading(false); }
+      } catch (err) { 
+        console.error("Error fetching events:", err); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchEvents();
   }, []);

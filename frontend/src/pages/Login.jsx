@@ -4,7 +4,8 @@ import { API_BASE_URL } from '../config';
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE_URL}/auth/google`;
+    const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
+    window.location.href = `${cleanBaseUrl}/auth/google`;
   };
 
   return (

@@ -28,14 +28,14 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   
-  // Filters State
   const [keyword, setKeyword] = useState('');
   const [cityFilter, setCityFilter] = useState('Sydney');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  
-  // Action State
   const [isImporting, setIsImporting] = useState(false);
+
+  // FIX: Helper to ensure API_BASE_URL is clean (no trailing slash)
+  const getCleanUrl = () => API_BASE_URL.replace(/\/$/, "");
 
   // Fetch Data based on filters
   useEffect(() => {
@@ -46,9 +46,14 @@ export default function Dashboard() {
         if (startDate) queryParams += `&startDate=${startDate}`;
         if (endDate) queryParams += `&endDate=${endDate}`;
 
-        const res = await axios.get(`${API_BASE_URL}/api/admin/dashboard${queryParams}`, { withCredentials: true });
+        // UPDATED: Uses the clean dynamic URL
+        const res = await axios.get(`${getCleanUrl()}/api/admin/dashboard${queryParams}`, { 
+          withCredentials: true 
+        });
         setEvents(res.data);
-      } catch (err) { console.error("Dashboard fetch error:", err); }
+      } catch (err) { 
+        console.error("Dashboard fetch error:", err); 
+      }
     };
     
     const delayDebounceFn = setTimeout(() => { fetchDashboardData(); }, 300);
@@ -58,12 +63,14 @@ export default function Dashboard() {
   const handleImport = async (id) => {
     setIsImporting(true);
     try {
-      
-      await axios.patch(`${API_BASE_URL}/api/admin/import/${id}`, {}, { withCredentials: true });
+      // UPDATED: Uses the clean dynamic URL
+      await axios.patch(`${getCleanUrl()}/api/admin/import/${id}`, {}, { 
+        withCredentials: true 
+      });
       setEvents(events.map(e => e._id === id ? { ...e, status: 'imported' } : e));
       setSelectedEvent({ ...selectedEvent, status: 'imported' });
     } catch (err) { 
-      alert("Import failed. Ensure backend is running."); 
+      alert("Import failed. Ensure backend is running and you are logged in."); 
     } finally {
       setIsImporting(false);
     }
