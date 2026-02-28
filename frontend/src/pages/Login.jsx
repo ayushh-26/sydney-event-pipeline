@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Radar, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config'; 
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    // Redirect to backend auth route
-    window.location.href = 'http://localhost:5000/auth/google';
+    window.location.href = `${API_BASE_URL}/auth/google`;
   };
 
   return (

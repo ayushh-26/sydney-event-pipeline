@@ -4,6 +4,7 @@ import { EventCard } from '../components/EventCard';
 import { TicketModal } from '../components/TicketModal';
 import { Sparkles, Activity, Radar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../config';
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -13,7 +14,7 @@ export default function Home() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/public/events');
+        const res = await axios.get(`${API_BASE_URL}/api/public/events`);
         setEvents(res.data);
       } catch (err) { console.error("Error fetching events", err); } 
       finally { setLoading(false); }

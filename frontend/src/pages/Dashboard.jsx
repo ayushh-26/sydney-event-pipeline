@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, MapPin, Calendar, ExternalLink, CheckCircle, AlertCircle, Database, LayoutTemplate, ArrowRight, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -45,7 +46,7 @@ export default function Dashboard() {
         if (startDate) queryParams += `&startDate=${startDate}`;
         if (endDate) queryParams += `&endDate=${endDate}`;
 
-        const res = await axios.get(`http://localhost:5000/api/admin/dashboard${queryParams}`, { withCredentials: true });
+        const res = await axios.get(`${API_BASE_URL}/api/admin/dashboard${queryParams}`, { withCredentials: true });
         setEvents(res.data);
       } catch (err) { console.error("Dashboard fetch error:", err); }
     };
@@ -57,7 +58,8 @@ export default function Dashboard() {
   const handleImport = async (id) => {
     setIsImporting(true);
     try {
-      await axios.patch(`http://localhost:5000/api/admin/import/${id}`, {}, { withCredentials: true });
+      
+      await axios.patch(`${API_BASE_URL}/api/admin/import/${id}`, {}, { withCredentials: true });
       setEvents(events.map(e => e._id === id ? { ...e, status: 'imported' } : e));
       setSelectedEvent({ ...selectedEvent, status: 'imported' });
     } catch (err) { 
