@@ -12,6 +12,9 @@ require('./config/passport')(passport);
 
 const app = express();
 
+// FIX 1: Trust the Render Proxy (Crucial for HTTPS and Redirect URIs)
+app.enable('trust proxy');
+
 // 1. CORS Configuration
 const allowedOrigins = ["http://localhost:5173", process.env.FRONTEND_URL];
 app.use(cors({
@@ -33,9 +36,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'sydney_events_secret_key',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // FIX 2: Explicitly tell session to trust the proxy
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // True if hosted on HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: process.env.NODE_ENV === 'production', 
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // FIX 3: Required for cross-domain cookies (Vercel -> Render)
+    maxAge: 24 * 60 * 60 * 1000 
   }
 }));
 
@@ -47,17 +52,14 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// 5. Internal Fallback Cron (Runs if the server happens to be awake at midnight)
+// 5. Internal Fallback Cron
 cron.schedule("0 0 * * *", () => {
   console.log("⏰ Internal cron: Running daily event scrape...");
   scrapeSydneyEvents();
 });
 
-// ==========================================
 // 6. SECURE AUTOMATED SCRAPER WEBHOOK (PRODUCTION)
-// ==========================================
 app.get('/api/cron/scrape', (req, res) => {
-  // Security Check: Block unauthorized attempts
   const authHeader = req.headers['x-cron-secret'];
   const querySecret = req.query.secret; 
   const secret = process.env.CRON_SECRET;
@@ -73,12 +75,8 @@ app.get('/api/cron/scrape', (req, res) => {
 
   try {
     console.log("🤖 Secure automated webhook triggered. Initiating background scrape...");
-    
-    // Fire-and-Forget: Do NOT use 'await' here.
-    // Puppeteer takes minutes. If we await, the server connection times out and crashes.
     scrapeSydneyEvents().catch(err => console.error("Background Scraper Error:", err));
     
-    // Instantly reply so the external cron service knows the ping was successful.
     res.status(200).json({ 
       message: "Scraper pipeline successfully initiated in the background.",
       timestamp: new Date().toISOString()
