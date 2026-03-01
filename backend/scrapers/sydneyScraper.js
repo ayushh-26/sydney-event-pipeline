@@ -14,11 +14,15 @@ const scrapeSydneyEvents = async () => {
   console.log("\n🚀 Starting Multi-Source Event Interceptor...");
   console.log("------------------------------------------");
 
+  // FIXED FOR RENDER: Added executablePath and critical Linux container args
   const browser = await puppeteer.launch({
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, 
     headless: "new",
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage", // Added for Render RAM limits
+      "--single-process",        // Added for Render stability
       "--disable-blink-features=AutomationControlled",
     ],
   });
@@ -136,7 +140,6 @@ const scrapeSydneyEvents = async () => {
       await autoScroll(page);
       await new Promise((r) => setTimeout(r, 2000));
       
-      // Clean UI: Log total here instead of inside the async interceptor
       console.log(`   ✅ Captured! Total events in queue: ${allEvents.length}`);
 
       if (i < pagesToScrape) {
@@ -183,7 +186,6 @@ const scrapeSydneyEvents = async () => {
     
     await page.goto("https://www.sydney.com/events", { waitUntil: "networkidle2", timeout: 60000 });
     
-    // Just wait 4 seconds for the initial JSON payload to flow in (no clicking pages)
     await new Promise((r) => setTimeout(r, 4000)); 
     
     let sydneyCaught = allEvents.length - eventCountBeforeSydney;
@@ -202,7 +204,8 @@ const scrapeSydneyEvents = async () => {
   } catch (error) {
     console.error("❌ Scraper Error:", error.message);
   } finally {
-    await browser.close();
+    // Only close if browser was successfully initialized
+    if (browser) await browser.close();
     isScraping = false;
   }
 };
