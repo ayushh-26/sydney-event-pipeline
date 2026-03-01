@@ -6,20 +6,17 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { API_BASE_URL } from "../config"; // ✅ IMPORT ADDED
 
 export default function Navbar() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Pulls the real auth state from your context
   const isAdminRoute = location.pathname.startsWith("/admin");
-
-  // ✅ Clean the base URL so we don't get double slashes
-  const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-[#0a0c10]/70 backdrop-blur-xl border-b border-white/5 px-6 py-4 transition-all duration-300">
       <div className="max-w-[1600px] mx-auto flex justify-between items-center">
         {/* Animated Logo */}
+        {/* Change this: */}
         <Link
           to="/"
           className="text-2xl font-black tracking-tighter text-white flex items-center gap-1 group"
@@ -32,7 +29,7 @@ export default function Navbar() {
 
         {/* Navigation & Actions */}
         <div className="flex items-center gap-4 md:gap-8">
-          {/* Home Link */}
+          {/* Home Link (Hidden on Home Page for cleaner UI, visible elsewhere) */}
           {location.pathname !== "/" && (
             <Link
               to="/"
@@ -55,9 +52,8 @@ export default function Navbar() {
                     <LayoutDashboard size={16} /> Dashboard
                   </Link>
                 ) : (
-                  // ✅ FIXED LOGOUT BUTTON
                   <a
-                    href={`${cleanBaseUrl}/auth/logout`}
+                    href="http://localhost:5000/auth/logout"
                     className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 text-xs font-black uppercase tracking-widest rounded-full transition-all duration-300 active:scale-95"
                   >
                     <LogOut size={16} /> Logout
