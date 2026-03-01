@@ -7,12 +7,10 @@ router.post('/public/tickets', async (req, res) => {
   try {
     const { email, eventId, consent } = req.body;
 
-    // Validate request
     if (!email || !eventId) {
       return res.status(400).json({ error: "Email and Event ID are required." });
     }
 
-    // Create and save the new lead
     const newLead = await Lead.create({
       email,
       eventId,
@@ -29,7 +27,6 @@ router.post('/public/tickets', async (req, res) => {
 // GET: Fetch all leads for the Admin Dashboard
 router.get('/admin/leads', async (req, res) => {
   try {
-    // .populate() pulls in the event title so the admin knows what event they wanted
     const leads = await Lead.find().populate('eventId', 'title date').sort({ createdAt: -1 });
     res.json(leads);
   } catch (err) {

@@ -9,17 +9,16 @@ router.get('/public/events', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Calculate 24 hours ago in both Milliseconds and Date Object formats
     const timeLimitMs = Date.now() - (24 * 60 * 60 * 1000);
     const timeLimitDate = new Date(timeLimitMs);
 
     const events = await Event.find({ 
       status: 'imported',
       $or: [
-        { date: { $gte: today } }, // Condition 1: Future events
-        { lastScrapedAt: { $gte: timeLimitMs } }, // Condition 2: Scraped recently (Number format)
-        { lastScrapedAt: { $gte: timeLimitDate } }, // Condition 3: Scraped recently (Date format)
-        { updatedAt: { $gte: timeLimitDate } } // Condition 4: Safety Fallback!
+        { date: { $gte: today } },
+        { lastScrapedAt: { $gte: timeLimitMs } },
+        { lastScrapedAt: { $gte: timeLimitDate } },
+        { updatedAt: { $gte: timeLimitDate } }
       ]
     }).sort({ date: 1 });
 
@@ -67,7 +66,7 @@ router.patch('/admin/import/:id', ensureAuth, async (req, res) => {
         'importDetails.importedAt': Date.now(), 
         'importDetails.isImported': true 
       },
-      { new: true } // Return the updated document
+      { new: true } 
     );
     res.json({ message: "Event published to live platform!", event });
   } catch (err) { 
