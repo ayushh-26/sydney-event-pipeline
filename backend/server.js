@@ -7,39 +7,51 @@ const session = require('express-session');
 const passport = require('passport');
 const { scrapeSydneyEvents } = require("./scrapers/sydneyScraper");
 
-// Initialize Passport Config
 require('./config/passport')(passport);
 
 const app = express();
 
-// FIX 1: Trust the Render Proxy (Crucial for HTTPS and Redirect URIs)
+// 1. TRUST PROXY (Required for Render + HTTPS)
 app.enable('trust proxy');
 
-// 1. CORS Configuration
-const allowedOrigins = ["http://localhost:5173", process.env.FRONTEND_URL];
+// 2. SMART CORS CONFIGURATION
+const allowedOrigins = [
+  "http://localhost:5173", 
+  process.env.FRONTEND_URL,
+  "https://pulsesyd.vercel.app"
+].filter(Boolean).map(url => url.replace(/\/$/, "")); // Remove trailing slashes from config
+
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS Policy Blocked'), false);
+
+    const sanitizedOrigin = origin.replace(/\/$/, "");
+    
+    if (allowedOrigins.includes(sanitizedOrigin)) {
+      callback(null, true);
+    } else {
+      // THIS LOG IS CRITICAL: Look at Render logs to see what string is here
+      console.error(`❌ CORS Policy Blocked origin: ${origin}`);
+      callback(new Error('CORS Policy Blocked'), false);
     }
-    return callback(null, true);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret']
 }));
 
-// 2. Body Parser
 app.use(express.json());
 
-// 3. Session & Passport Middleware
+// 3. SESSION CONFIG (Samesite None is required for cross-domain)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'sydney_events_secret_key',
   resave: false,
   saveUninitialized: false,
-  proxy: true, // FIX 2: Explicitly tell session to trust the proxy
+  proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', 
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // FIX 3: Required for cross-domain cookies (Vercel -> Render)
+    secure: true, // Always true on Render/Vercel (HTTPS)
+    sameSite: 'none', // Critical for Vercel -> Render communication
     maxAge: 24 * 60 * 60 * 1000 
   }
 }));
@@ -47,46 +59,35 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 4. Database Connection
+// 4. DATABASE
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// 5. Internal Fallback Cron
+// 5. CRON
 cron.schedule("0 0 * * *", () => {
   console.log("⏰ Internal cron: Running daily event scrape...");
   scrapeSydneyEvents();
 });
 
-// 6. SECURE AUTOMATED SCRAPER WEBHOOK (PRODUCTION)
+// 6. SCRAPER WEBHOOK
 app.get('/api/cron/scrape', (req, res) => {
-  const authHeader = req.headers['x-cron-secret'];
-  const querySecret = req.query.secret; 
   const secret = process.env.CRON_SECRET;
+  const incomingSecret = req.headers['x-cron-secret'] || req.query.secret;
 
-  if (!secret) {
-    return res.status(500).json({ error: "Server misconfiguration: CRON_SECRET not set." });
-  }
-
-  if (authHeader !== secret && querySecret !== secret) {
-    console.warn("⚠️ Unauthorized scrape attempt blocked.");
+  if (!secret || incomingSecret !== secret) {
     return res.status(401).json({ error: "Unauthorized access." });
   }
 
   try {
-    console.log("🤖 Secure automated webhook triggered. Initiating background scrape...");
     scrapeSydneyEvents().catch(err => console.error("Background Scraper Error:", err));
-    
-    res.status(200).json({ 
-      message: "Scraper pipeline successfully initiated in the background.",
-      timestamp: new Date().toISOString()
-    });
+    res.status(200).json({ message: "Scraper pipeline initiated." });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 7. Routes
+// 7. ROUTES
 app.use("/api", require("./routes/eventRoutes"));
 app.use("/api", require("./routes/leadRoutes"));
 app.use("/auth", require("./routes/authRoutes"));
