@@ -17,15 +17,17 @@ const scrapeSydneyEvents = async () => {
   // FIXED FOR RENDER: Added executablePath and critical Linux container args
   // REMOVE the executablePath line and use this clean launch:
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage", 
-      "--single-process",        
-      "--disable-blink-features=AutomationControlled",
-    ],
-  });
+  // This points exactly where the error log says it is looking
+  executablePath: '/opt/render/.cache/puppeteer/chrome/linux-145.0.7632.77/chrome-linux64/chrome',
+  headless: "new",
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage", 
+    "--single-process",        
+    "--disable-blink-features=AutomationControlled",
+  ],
+});
 
   try {
     const page = await browser.newPage();
