@@ -25,14 +25,16 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     const sanitizedOrigin = origin.replace(/\/$/, "");
-    if (allowedOrigins.includes(sanitizedOrigin)) {
+    
+    // ⚡ FIXED: Now allows your exact URLs PLUS any Vercel Preview URL
+    if (allowedOrigins.includes(sanitizedOrigin) || sanitizedOrigin.endsWith(".vercel.app")) {
       callback(null, true);
     } else {
       console.error(`❌ CORS Policy Blocked origin: ${origin}`);
       callback(new Error('CORS Policy Blocked'), false);
     }
   },
-  credentials: true, // This MUST be true for cookies to work
+  credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-cron-secret', 'Accept']
 }));
