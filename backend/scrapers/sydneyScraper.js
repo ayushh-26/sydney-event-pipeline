@@ -15,14 +15,14 @@ const scrapeSydneyEvents = async () => {
   console.log("------------------------------------------");
 
   // FIXED FOR RENDER: Added executablePath and critical Linux container args
+  // REMOVE the executablePath line and use this clean launch:
   const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, 
     headless: "new",
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage", // Added for Render RAM limits
-      "--single-process",        // Added for Render stability
+      "--disable-dev-shm-usage", 
+      "--single-process",        
       "--disable-blink-features=AutomationControlled",
     ],
   });
