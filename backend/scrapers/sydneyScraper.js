@@ -14,11 +14,12 @@ const scrapeSydneyEvents = async () => {
   console.log("\n🚀 Starting Multi-Source Event Interceptor...");
   console.log("------------------------------------------");
 
-  // FIXED FOR RENDER: Added executablePath and critical Linux container args
-  // REMOVE the executablePath line and use this clean launch:
-  const browser = await puppeteer.launch({
-  // This points exactly where the error log says it is looking
-  executablePath: '/opt/render/.cache/puppeteer/chrome/linux-145.0.7632.77/chrome-linux64/chrome',
+  const path = require('path');
+
+// ... inside scrapeSydneyEvents
+const browser = await puppeteer.launch({
+  // Points to the folder we created in the Build Command
+  executablePath: path.join(process.cwd(), 'chrome/chrome/linux-145.0.7632.77/chrome-linux64/chrome'),
   headless: "new",
   args: [
     "--no-sandbox",
