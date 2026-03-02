@@ -19,7 +19,8 @@ export const TicketModal = ({ event, isOpen, onClose }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/public/tickets', {
+      // ⚡ FIXED: Pointing to the live Render backend instead of localhost
+      await axios.post('https://sydney-event-api.onrender.com/api/public/tickets', {
         email,
         eventId: event._id,
         consent
