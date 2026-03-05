@@ -9,26 +9,29 @@ const scrapeSydneyEvents = async () => {
     console.log("⚠️ Scrape already in progress. Skipping duplicate call.");
     return;
   }
-  
+
   isScraping = true;
   console.log("\n🚀 Starting Multi-Source Event Interceptor...");
   console.log("------------------------------------------");
 
-  const path = require('path');
+  const path = require("path");
 
-// ... inside scrapeSydneyEvents
-const browser = await puppeteer.launch({
-  // Points to the folder we created in the Build Command
-  executablePath: path.join(process.cwd(), 'chrome/chrome/linux-145.0.7632.77/chrome-linux64/chrome'),
-  headless: "new",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage", 
-    "--single-process",        
-    "--disable-blink-features=AutomationControlled",
-  ],
-});
+  // ... inside scrapeSydneyEvents
+  const browser = await puppeteer.launch({
+    // Points to the folder we created in the Build Command
+    executablePath: path.join(
+      process.cwd(),
+      "chrome/chrome/linux-145.0.7632.77/chrome-linux64/chrome",
+    ),
+    headless: "new",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--single-process",
+      "--disable-blink-features=AutomationControlled",
+    ],
+  });
 
   try {
     const page = await browser.newPage();
@@ -48,14 +51,17 @@ const browser = await puppeteer.launch({
       if (resourceType === "fetch" || resourceType === "xhr") {
         try {
           const json = await response.json();
-          
+
           // ----------------------------------------
           // LOGIC A: EVENTBRITE (Your exact working code)
           // ----------------------------------------
           let eventArray = null;
           if (json?.events && Array.isArray(json.events)) {
             eventArray = json.events;
-          } else if (json?.events?.results && Array.isArray(json.events.results)) {
+          } else if (
+            json?.events?.results &&
+            Array.isArray(json.events.results)
+          ) {
             eventArray = json.events.results;
           } else if (json?.results && Array.isArray(json.results)) {
             eventArray = json.results;
@@ -63,17 +69,21 @@ const browser = await puppeteer.launch({
 
           if (eventArray) {
             eventArray.forEach((event) => {
-              if (event.privacy_setting && event.privacy_setting !== "unlocked") return;
+              if (event.privacy_setting && event.privacy_setting !== "unlocked")
+                return;
               if (event.status && event.status !== "live") return;
-              
+
               const now = new Date();
-              const salesEnd = new Date(event.event_sales_status?.end_sales_date?.utc);
-              if (salesEnd < now || (salesEnd - now) < 3600000) return;
+              const salesEnd = new Date(
+                event.event_sales_status?.end_sales_date?.utc,
+              );
+              if (salesEnd < now || salesEnd - now < 3600000) return;
 
               if (!seenTitles.has(event.name)) {
                 seenTitles.add(event.name);
 
-                let highResImage = event.image?.original?.url || event.image?.url;
+                let highResImage =
+                  event.image?.original?.url || event.image?.url;
                 let venueName = event.primary_venue?.name || "Sydney, AU";
                 if (event.primary_venue?.address?.localized_area_display) {
                   venueName += `, ${event.primary_venue.address.localized_area_display}`;
@@ -82,7 +92,9 @@ const browser = await puppeteer.launch({
                 let eventDate = new Date().toISOString();
                 try {
                   const timeStr = event.start_time || "00:00";
-                  eventDate = new Date(`${event.start_date}T${timeStr}:00`).toISOString();
+                  eventDate = new Date(
+                    `${event.start_date}T${timeStr}:00`,
+                  ).toISOString();
                 } catch (e) {}
 
                 const eventId = event.id || event.eventbrite_event_id;
@@ -93,10 +105,12 @@ const browser = await puppeteer.launch({
                   date: eventDate,
                   venue: venueName,
                   description: event.summary || "No description provided.",
-                  imageUrl: highResImage || `https://picsum.photos/seed/${eventId}/400/300`,
+                  imageUrl:
+                    highResImage ||
+                    `https://picsum.photos/seed/${eventId}/400/300`,
                   originalUrl: cleanSafeUrl,
                   sourceName: "Eventbrite",
-                  city: "Sydney"
+                  city: "Sydney",
                 });
               }
             });
@@ -109,19 +123,25 @@ const browser = await puppeteer.launch({
             json.hits.hits.forEach((item) => {
               const src = item._source;
               const title = src.title?.[0];
-              
+
               if (title && !seenTitles.has(title)) {
                 seenTitles.add(title);
-                
+
                 allEvents.push({
                   title: title,
-                  date: src.event_date_range?.[0]?.gte || new Date().toISOString(),
+                  date:
+                    src.event_date_range?.[0]?.gte || new Date().toISOString(),
                   venue: src.owning_organisation_name?.[0] || "Sydney, AU",
-                  description: src.product_summary?.[0] || src.product_description?.[0] || "No description provided.",
-                  imageUrl: src.image?.[0]?.path || `https://picsum.photos/seed/${item._id}/400/300`,
+                  description:
+                    src.product_summary?.[0] ||
+                    src.product_description?.[0] ||
+                    "No description provided.",
+                  imageUrl:
+                    src.image?.[0]?.path ||
+                    `https://picsum.photos/seed/${item._id}/400/300`,
                   originalUrl: src.url?.[0] || "https://www.sydney.com/events",
                   sourceName: "City of Sydney",
-                  city: "Sydney"
+                  city: "Sydney",
                 });
               }
             });
@@ -134,22 +154,27 @@ const browser = await puppeteer.launch({
     // SCRAPE SOURCE 1: EVENTBRITE
     // =====================================
     console.log("🌐 Navigating to Eventbrite...");
-    await page.goto("https://www.eventbrite.com.au/d/australia--sydney/all-events/", { waitUntil: "networkidle2", timeout: 60000 });
-
+    await page.goto(
+      "https://www.eventbrite.com.au/d/australia--sydney/all-events/",
+      { waitUntil: "domcontentloaded", timeout: 60000 },
+    );
     const pagesToScrape = 4;
 
     for (let i = 1; i <= pagesToScrape; i++) {
       console.log(`📜 Processing Eventbrite Page ${i}/${pagesToScrape}...`);
       await autoScroll(page);
       await new Promise((r) => setTimeout(r, 2000));
-      
+
       console.log(`   ✅ Captured! Total events in queue: ${allEvents.length}`);
 
       if (i < pagesToScrape) {
         const clickedNext = await page.evaluate(() => {
           const allElements = Array.from(document.querySelectorAll("*"));
           const paginationText = allElements.find(
-            (el) => el.innerText && el.innerText.match(/^\d+\s+of\s+\d+$/) && el.children.length === 0
+            (el) =>
+              el.innerText &&
+              el.innerText.match(/^\d+\s+of\s+\d+$/) &&
+              el.children.length === 0,
           );
           if (paginationText?.parentElement?.parentElement) {
             const wrapper = paginationText.parentElement.parentElement;
@@ -160,7 +185,10 @@ const browser = await puppeteer.launch({
               return true;
             }
           }
-          const selectors = ['button[aria-label*="Next"]', 'button[data-testid*="next"]'];
+          const selectors = [
+            'button[aria-label*="Next"]',
+            'button[data-testid*="next"]',
+          ];
           for (let sel of selectors) {
             const btn = document.querySelector(sel);
             if (btn && !btn.disabled) {
@@ -186,19 +214,25 @@ const browser = await puppeteer.launch({
     console.log("------------------------------------------");
     console.log("🌐 Navigating to Sydney.com...");
     let eventCountBeforeSydney = allEvents.length;
-    
-    await page.goto("https://www.sydney.com/events", { waitUntil: "networkidle2", timeout: 60000 });
-    
-    await new Promise((r) => setTimeout(r, 4000)); 
-    
+
+    await page.goto("https://www.sydney.com/events", {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await new Promise((r) => setTimeout(r, 4000));
+
     let sydneyCaught = allEvents.length - eventCountBeforeSydney;
-    console.log(`   ✅ Captured! Added ${sydneyCaught} events from Sydney.com.`);
+    console.log(
+      `   ✅ Captured! Added ${sydneyCaught} events from Sydney.com.`,
+    );
 
     // =====================================
     // FINALIZE PIPELINE
     // =====================================
     console.log("------------------------------------------");
-    console.log(`✅ Success: Total unique events extracted: ${allEvents.length}`);
+    console.log(
+      `✅ Success: Total unique events extracted: ${allEvents.length}`,
+    );
 
     if (allEvents.length > 0) {
       console.log(`🔄 Transferring to MongoDB Pipeline...`);
