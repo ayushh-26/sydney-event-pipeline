@@ -18,20 +18,20 @@ const scrapeSydneyEvents = async () => {
 
   // ... inside scrapeSydneyEvents
   const browser = await puppeteer.launch({
-    // Points to the folder we created in the Build Command
-    executablePath: path.join(
-      process.cwd(),
-      "chrome/chrome/linux-145.0.7632.77/chrome-linux64/chrome",
-    ),
-    headless: "new",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--single-process",
-      "--disable-blink-features=AutomationControlled",
-    ],
-  });
+  // ⚡ FIXED: Points to Windows Chrome locally, Linux Chrome on Render
+  executablePath: process.env.NODE_ENV === 'production' 
+    ? path.join(process.cwd(), 'chrome/chrome/linux-145.0.7632.77/chrome-linux64/chrome') 
+    : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Standard Windows path
+  
+  headless: "new",
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage", 
+    "--single-process",        
+    "--disable-blink-features=AutomationControlled",
+  ],
+});
 
   try {
     const page = await browser.newPage();
@@ -53,7 +53,7 @@ const scrapeSydneyEvents = async () => {
           const json = await response.json();
 
           // ----------------------------------------
-          // LOGIC A: EVENTBRITE (Your exact working code)
+          // LOGIC A: EVENTBRITE 
           // ----------------------------------------
           let eventArray = null;
           if (json?.events && Array.isArray(json.events)) {
@@ -219,7 +219,7 @@ const scrapeSydneyEvents = async () => {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
-    await new Promise((r) => setTimeout(r, 4000));
+    await new Promise((r) => setTimeout(r, 8000));
 
     let sydneyCaught = allEvents.length - eventCountBeforeSydney;
     console.log(
