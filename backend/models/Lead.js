@@ -9,17 +9,22 @@ const leadSchema = new mongoose.Schema({
   },
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event', // This links the lead to the specific event they clicked
+    ref: 'Event',
     required: true
   },
   consent: {
     type: Boolean,
     required: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verifiedAt: {
+    type: Date
   }
-});
+}, { timestamps: true });
+
+leadSchema.index({ email: 1, eventId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Lead', leadSchema);
